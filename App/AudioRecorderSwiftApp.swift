@@ -9,9 +9,18 @@ import SwiftUI
 
 @main
 struct AudioRecorderSwiftApp: App {
+    
+    @StateObject private var container = AppContainer()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RecordingView(
+                viewModel: RecordingViewModel(
+                    recorderService: container.audioRecorderService,
+                    playerService: container.audioPlayerService,
+                    repository: container.recordingRepository
+                )
+            )
         }
     }
 }
