@@ -20,146 +20,141 @@ public struct RecordingView: View {
     }
 
     public var body: some View {
-        NavigationView {
-            ZStack {
-                // Background Gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(red: 0.08, green: 0.08, blue: 0.12), Color(red: 0.03, green: 0.03, blue: 0.05)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+        ZStack {
+            // Background Gradient
+            LinearGradient(
+                gradient: Gradient(colors: [Color(red: 0.08, green: 0.08, blue: 0.12), Color(red: 0.03, green: 0.03, blue: 0.05)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
 
-                VStack(spacing: 24) {
-                    // Header Status
-                    VStack(spacing: 8) {
-                        Text(viewModel.isRecording ? "RECORDING" : "AUDIO RECORDER")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(viewModel.isRecording ? .red : .gray)
-                            .tracking(2)
-                            .padding(.top, 16)
-                        
-                        Text(formatDuration(viewModel.isRecording ? viewModel.recordingDuration : 0))
-                            .font(.system(size: 54, weight: .thin, design: .monospaced))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.vertical, 20)
+            VStack(spacing: 24) {
+                // Header Status
+                VStack(spacing: 8) {
+                    Text(viewModel.isRecording ? "RECORDING" : "AUDIO RECORDER")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundColor(viewModel.isRecording ? .red : .gray)
+                        .tracking(2)
+                        .padding(.top, 16)
+                    
+                    Text(formatDuration(viewModel.isRecording ? viewModel.recordingDuration : 0))
+                        .font(.system(size: 54, weight: .thin, design: .monospaced))
+                        .foregroundColor(.white)
+                }
+                .padding(.vertical, 20)
 
-                    // Waveform (Simulated live animation during recording)
-                    HStack(spacing: 4) {
-                        ForEach(0..<waveHeights.count, id: \.self) { index in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: viewModel.isRecording ? [.red, .orange] : [.blue, .cyan]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
+                // Waveform (Simulated live animation during recording)
+                HStack(spacing: 4) {
+                    ForEach(0..<waveHeights.count, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: viewModel.isRecording ? [.red, .orange] : [.blue, .cyan]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
                                 )
-                                .frame(width: 4, height: waveHeights[index])
-                        }
+                            )
+                            .frame(width: 4, height: waveHeights[index])
                     }
-                    .frame(height: 80)
-                    .onReceive(timer) { _ in
-                        if viewModel.isRecording {
-                            withAnimation(.easeInOut(duration: 0.1)) {
-                                for i in 0..<waveHeights.count {
-                                    waveHeights[i] = CGFloat.random(in: 10...70)
-                                }
-                            }
-                        } else {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                for i in 0..<waveHeights.count {
-                                    let sine = sin(CGFloat(i) * 0.5) * 10 + 20
-                                    waveHeights[i] = max(8, sine)
-                                }
+                }
+                .frame(height: 80)
+                .onReceive(timer) { _ in
+                    if viewModel.isRecording {
+                        withAnimation(.easeInOut(duration: 0.1)) {
+                            for i in 0..<waveHeights.count {
+                                waveHeights[i] = CGFloat.random(in: 10...70)
                             }
                         }
-                    }
-
-                    // Record Button Area
-                    Button(action: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                            viewModel.toggleRecording()
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(viewModel.isRecording ? Color.red.opacity(0.15) : Color.blue.opacity(0.15))
-                                .frame(width: 100, height: 100)
-                                .scaleEffect(viewModel.isRecording ? 1.2 : 1.0)
-                                .animation(viewModel.isRecording ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true) : .default, value: viewModel.isRecording)
-
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: viewModel.isRecording ? [.red, .orange] : [.blue, .cyan]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 76, height: 76)
-                                .shadow(color: viewModel.isRecording ? .red.opacity(0.5) : .blue.opacity(0.5), radius: 10, x: 0, y: 5)
-                            
-                            if viewModel.isRecording {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.white)
-                                    .frame(width: 24, height: 24)
-                            } else {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 24, height: 24)
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            for i in 0..<waveHeights.count {
+                                let sine = sin(CGFloat(i) * 0.5) * 10 + 20
+                                waveHeights[i] = max(8, sine)
                             }
-                        }
-                    }
-                    .padding(.bottom, 16)
-
-                    // Recordings List
-                    VStack(alignment: .leading) {
-                        Text("SAVED RECORDINGS")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(.gray)
-                            .tracking(1.5)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 8)
-
-                        if viewModel.recordings.isEmpty {
-                            Spacer()
-                            VStack(spacing: 12) {
-                                Image(systemName: "mic.slash")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.gray.opacity(0.5))
-                                Text("No recordings yet")
-                                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                            Spacer()
-                        } else {
-                            List {
-                                ForEach(viewModel.recordings) { recording in
-                                    RecordingRow(
-                                        recording: recording,
-                                        isPlaying: viewModel.playingRecordingID == recording.id,
-                                        onPlayToggle: {
-                                            viewModel.togglePlayback(for: recording)
-                                        }
-                                    )
-                                    .listRowBackground(Color.clear)
-                                    .listRowSeparator(.hidden)
-                                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                                }
-                                .onDelete(perform: viewModel.deleteRecording)
-                            }
-                            .listStyle(.plain)
-                            .background(Color.clear)
                         }
                     }
                 }
+
+                // Record Button Area
+                Button(action: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                        viewModel.toggleRecording()
+                    }
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(viewModel.isRecording ? Color.red.opacity(0.15) : Color.blue.opacity(0.15))
+                            .frame(width: 100, height: 100)
+                            .scaleEffect(viewModel.isRecording ? 1.2 : 1.0)
+                            .animation(viewModel.isRecording ? .easeInOut(duration: 1.0).repeatForever(autoreverses: true) : .default, value: viewModel.isRecording)
+
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: viewModel.isRecording ? [.red, .orange] : [.blue, .cyan]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 76, height: 76)
+                            .shadow(color: viewModel.isRecording ? .red.opacity(0.5) : .blue.opacity(0.5), radius: 10, x: 0, y: 5)
+                        
+                        if viewModel.isRecording {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.white)
+                                .frame(width: 24, height: 24)
+                        } else {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 24, height: 24)
+                        }
+                    }
+                }
+                .padding(.bottom, 16)
+
+                // Recordings List
+                VStack(alignment: .leading) {
+                    Text("SAVED RECORDINGS")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.gray)
+                        .tracking(1.5)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+
+                    if viewModel.recordings.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "mic.slash")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray.opacity(0.5))
+                            Text("No recordings yet")
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        Spacer()
+                    } else {
+                        List {
+                            ForEach(viewModel.recordings) { recording in
+                                RecordingRow(
+                                    recording: recording,
+                                    isPlaying: viewModel.playingRecordingID == recording.id,
+                                    onPlayToggle: {
+                                        viewModel.togglePlayback(for: recording)
+                                    }
+                                )
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                            }
+                            .onDelete(perform: viewModel.deleteRecording)
+                        }
+                        .listStyle(.plain)
+                        .background(Color.clear)
+                    }
+                }
             }
-            #if os(iOS)
-            .navigationBarHidden(true)
-            #endif
         }
         .preferredColorScheme(.dark)
     }
