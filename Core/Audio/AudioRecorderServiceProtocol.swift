@@ -11,4 +11,5 @@ public protocol AudioRecorderServiceProtocol {
     var isRecording: Bool { get }
     func startRecording() throws -> URL
     func stopRecording() -> (url: URL, duration: TimeInterval)?
+    func getAmplitude() -> Float
 }

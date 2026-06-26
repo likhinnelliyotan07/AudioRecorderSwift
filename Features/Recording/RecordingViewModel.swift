@@ -18,6 +18,7 @@ public class RecordingViewModel: ObservableObject {
     @Published public var isRecording = false
     @Published public var recordingDuration: TimeInterval = 0
     @Published public var playingRecordingID: UUID?
+    @Published public var recordingLevels: [Float] = Array(repeating: 0.05, count: 30)
 
     private var timer: AnyCancellable?
     private var recordingStartTime: Date?
@@ -108,6 +109,22 @@ public class RecordingViewModel: ObservableObject {
         loadRecordings()
     }
 
+    public func deleteRecording(_ recording: Recording) {
+        if playingRecordingID == recording.id {
+            stopPlaying()
+        }
+        repository.deleteRecording(recording)
+        loadRecordings()
+    }
+
+    public func renameRecording(_ recording: Recording, newName: String) {
+        guard !newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        var updated = recording
+        updated.name = newName
+        repository.saveRecording(updated)
+        loadRecordings()
+    }
+
     public func togglePlayback(for recording: Recording) {
         if playingRecordingID == recording.id {
             stopPlaying()
@@ -135,11 +152,19 @@ public class RecordingViewModel: ObservableObject {
     }
 
     private func startTimer() {
-        timer = Timer.publish(every: 0.1, on: .main, in: .common)
+        recordingLevels = Array(repeating: 0.05, count: 30)
+        
+        timer = Timer.publish(every: 0.05, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self, let startTime = self.recordingStartTime else { return }
                 self.recordingDuration = Date().timeIntervalSince(startTime)
+                
+                let amp = self.recorderService.getAmplitude()
+                
+                // Shift array left
+                self.recordingLevels.removeFirst()
+                self.recordingLevels.append(amp)
             }
     }
 

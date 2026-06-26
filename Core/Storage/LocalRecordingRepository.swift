@@ -22,7 +22,11 @@ public class LocalRecordingRepository: RecordingRepositoryProtocol {
 
     public func saveRecording(_ recording: Recording) {
         var recordings = fetchRecordings()
-        recordings.append(recording)
+        if let index = recordings.firstIndex(where: { $0.id == recording.id }) {
+            recordings[index] = recording
+        } else {
+            recordings.append(recording)
+        }
         saveToDisk(recordings)
     }
 
