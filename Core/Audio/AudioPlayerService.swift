@@ -20,6 +20,22 @@ public class AudioPlayerService: NSObject, AudioPlayerServiceProtocol, AVAudioPl
         audioPlayer?.url
     }
 
+    public var currentTime: TimeInterval {
+        audioPlayer?.currentTime ?? 0
+    }
+
+    public var duration: TimeInterval {
+        audioPlayer?.duration ?? 0
+    }
+
+    public var rate: Float {
+        get { audioPlayer?.rate ?? 1.0 }
+        set {
+            audioPlayer?.enableRate = true
+            audioPlayer?.rate = newValue
+        }
+    }
+
     public func startPlaying(url: URL, onCompletion: @escaping () -> Void) throws {
         stopPlaying()
         
@@ -30,8 +46,17 @@ public class AudioPlayerService: NSObject, AudioPlayerServiceProtocol, AVAudioPl
         #endif
 
         audioPlayer = try AVAudioPlayer(contentsOf: url)
+        audioPlayer?.enableRate = true
         audioPlayer?.delegate = self
         self.completionHandler = onCompletion
+        audioPlayer?.play()
+    }
+
+    public func pausePlaying() {
+        audioPlayer?.pause()
+    }
+
+    public func resumePlaying() {
         audioPlayer?.play()
     }
 
@@ -40,6 +65,10 @@ public class AudioPlayerService: NSObject, AudioPlayerServiceProtocol, AVAudioPl
         audioPlayer = nil
         completionHandler?()
         completionHandler = nil
+    }
+
+    public func seek(to time: TimeInterval) {
+        audioPlayer?.currentTime = time
     }
 
     // MARK: - AVAudioPlayerDelegate
