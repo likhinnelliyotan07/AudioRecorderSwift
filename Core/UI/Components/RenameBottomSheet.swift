@@ -62,32 +62,7 @@ public struct RenameBottomSheet: View {
                     .foregroundColor(AppColors.textPurple)
                 
                 // Text Field with custom border and clear button
-                HStack(spacing: 8) {
-                    TextField("", text: $nameText)
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
-                        .foregroundColor(.white)
-                        .onChange(of: nameText) { newValue in
-                            if newValue.count > maxCharacters {
-                                nameText = String(newValue.prefix(maxCharacters))
-                            }
-                        }
-                    
-                    if !nameText.isEmpty {
-                        Button(action: { nameText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.white.opacity(0.5))
-                                .font(.system(size: 16))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.all, 14)
-                .background(Color.black.opacity(0.3))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(AppColors.primaryGradientStart, lineWidth: 1.5)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                inputField
                 
                 // Character counter
                 Text("\(nameText.count)/\(maxCharacters)")
@@ -132,6 +107,39 @@ public struct RenameBottomSheet: View {
         }
     }
     
+    // MARK: - Sub-expressions (extracted to help Swift type-checker)
+
+    private var inputField: some View {
+        HStack(spacing: 8) {
+            TextField("", text: $nameText)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundColor(.white)
+                .onChange(of: nameText, perform: clampText)
+
+            if !nameText.isEmpty {
+                Button(action: { nameText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.white.opacity(0.5))
+                        .font(.system(size: 16))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.all, 14)
+        .background(Color.black.opacity(0.3))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppColors.primaryGradientStart, lineWidth: 1.5)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func clampText(_ newValue: String) {
+        if newValue.count > maxCharacters {
+            nameText = String(newValue.prefix(maxCharacters))
+        }
+    }
+
     private var safeAreaBottomHeight: CGFloat {
         #if os(iOS)
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -144,10 +152,11 @@ public struct RenameBottomSheet: View {
 }
 
 // Custom shape to round only top left and top right corners of the bottom sheet
+#if os(iOS)
 struct RenameCustomCorner: Shape {
     var corners: UIRectCorner
     var radius: CGFloat
-    
+
     func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(
             roundedRect: rect,
@@ -157,6 +166,28 @@ struct RenameCustomCorner: Shape {
         return Path(path.cgPath)
     }
 }
+#else
+/// Fallback for non-iOS platforms: rounds only the top two corners using SwiftUI.
+struct RenameCustomCorner: Shape {
+    var corners: Int = 0   // unused on non-iOS, kept for API compatibility
+    var radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX + radius, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + radius),
+                          control: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + radius))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + radius, y: rect.minY),
+                          control: CGPoint(x: rect.minX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+#endif
 
 // MARK: - Preview Showcase
 struct RenameBottomSheet_Previews: PreviewProvider {
