@@ -17,6 +17,11 @@ public class AudioRecorderService: NSObject, AudioRecorderServiceProtocol, AVAud
         audioRecorder?.isRecording ?? false
     }
 
+    public var isPaused: Bool {
+        guard let recorder = audioRecorder else { return false }
+        return !recorder.isRecording && recordingStartTime != nil
+    }
+
     public func startRecording() throws -> URL {
         #if os(iOS)
         let session = AVAudioSession.sharedInstance()
@@ -38,6 +43,7 @@ public class AudioRecorderService: NSObject, AudioRecorderServiceProtocol, AVAud
         ]
 
         audioRecorder = try AVAudioRecorder(url: fileURL, settings: settings)
+        audioRecorder?.isMeteringEnabled = true
         audioRecorder?.delegate = self
         audioRecorder?.prepareToRecord()
         audioRecorder?.record()
@@ -46,18 +52,44 @@ public class AudioRecorderService: NSObject, AudioRecorderServiceProtocol, AVAud
         return fileURL
     }
 
+    public func pauseRecording() {
+        audioRecorder?.pause()
+    }
+
+    public func resumeRecording() throws {
+        audioRecorder?.record()
+    }
+
     public func stopRecording() -> (url: URL, duration: TimeInterval)? {
-        guard let recorder = audioRecorder, recorder.isRecording,
-              let url = recordingURL, let startTime = recordingStartTime else {
+        guard let recorder = audioRecorder, (recorder.isRecording || isPaused),
+              let url = recordingURL, let _ = recordingStartTime else {
             return nil
         }
         
+        let duration = recorder.currentTime
         recorder.stop()
-        let duration = Date().timeIntervalSince(startTime)
         audioRecorder = nil
         recordingStartTime = nil
         recordingURL = nil
         
         return (url, duration)
+    }
+
+    public func getAmplitude() -> Float {
+        guard let recorder = audioRecorder, recorder.isRecording else { return 0.0 }
+        recorder.updateMeters()
+        let power = recorder.averagePower(forChannel: 0)
+        
+        // Map decibels (-60dB to 0dB) to a linear progress (0.0 to 1.0)
+        let noiseFloor: Float = -60.0
+        if power < noiseFloor {
+            return 0.0
+        } else if power >= 0.0 {
+            return 1.0
+        } else {
+            let maxAmp = abs(noiseFloor)
+            let amp = power + maxAmp
+            return amp / maxAmp
+        }
     }
 }
